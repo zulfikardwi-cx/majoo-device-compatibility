@@ -24,12 +24,6 @@ export function SiteHeader() {
           >
             Kategori
           </Link>
-          <Link
-            href="/admin"
-            className="rounded-full border border-[var(--color-border)] px-4 py-2 text-[var(--foreground)] transition-colors hover:border-[var(--color-primary)] hover:text-[var(--color-primary-dark)]"
-          >
-            Admin
-          </Link>
         </nav>
       </div>
     </header>

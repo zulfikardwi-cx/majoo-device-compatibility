@@ -43,28 +43,40 @@ export function DeviceGrid({ devices }: { devices: Device[] }) {
             className="w-full rounded-full border border-[var(--color-border)] bg-white py-2.5 pl-10 pr-4 text-sm outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
           />
         </div>
-        <select
-          value={osFilter}
-          onChange={(e) => setOsFilter(e.target.value)}
-          className="rounded-full border border-[var(--color-border)] bg-white px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
-        >
-          <option value="all">Semua OS</option>
-          {osOptions.map((os) => (
-            <option key={os} value={os}>
-              {os}
-            </option>
-          ))}
-        </select>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-full border border-[var(--color-border)] bg-white px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
-        >
-          <option value="all">Semua Status</option>
-          <option value="compatible">Compatible</option>
-          <option value="not_compatible">Tidak Compatible</option>
-          <option value="untested">Belum Diuji</option>
-        </select>
+        <div className="relative">
+          <select
+            value={osFilter}
+            onChange={(e) => setOsFilter(e.target.value)}
+            className="appearance-none rounded-full border border-[var(--color-border)] bg-white py-2.5 pl-4 pr-9 text-sm outline-none focus:border-[var(--color-primary)]"
+          >
+            <option value="all">Semua OS</option>
+            {osOptions.map((os) => (
+              <option key={os} value={os}>
+                {os}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-text-muted)]"
+            aria-hidden="true"
+          />
+        </div>
+        <div className="relative">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="appearance-none rounded-full border border-[var(--color-border)] bg-white py-2.5 pl-4 pr-9 text-sm outline-none focus:border-[var(--color-primary)]"
+          >
+            <option value="all">Semua Status</option>
+            <option value="compatible">Compatible</option>
+            <option value="not_compatible">Tidak Compatible</option>
+            <option value="untested">Belum Diuji</option>
+          </select>
+          <ChevronDown
+            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-text-muted)]"
+            aria-hidden="true"
+          />
+        </div>
       </div>
 
       {filtered.length === 0 ? (
@@ -127,7 +139,10 @@ export function DeviceGrid({ devices }: { devices: Device[] }) {
                     )}
                     {device.setting && <Row label="Setting" value={device.setting} />}
                     {device.app_version && (
-                      <Row label="Versi aplikasi" value={device.app_version} />
+                      <Row
+                        label="Versi aplikasi"
+                        value={`${device.app_version} atau versi lebih baru`}
+                      />
                     )}
                     {device.notes && <Row label="Catatan" value={device.notes} />}
                   </dl>
