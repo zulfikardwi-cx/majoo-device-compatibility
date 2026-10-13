@@ -16,20 +16,22 @@ export function AllDevicesBrowser({ devices }: { devices: DeviceWithCategory[] }
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [activeGroup, setActiveGroup] = useState<DeviceGroup | null>(null);
 
-  const categoryCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const d of devices) {
-      counts.set(d.category_slug, (counts.get(d.category_slug) ?? 0) + 1);
-    }
-    return counts;
-  }, [devices]);
-
   const osOptions = useMemo(() => {
     const set = new Set(devices.map((d) => d.os).filter((v): v is string => !!v));
     return Array.from(set).sort();
   }, [devices]);
 
   const groups = useMemo(() => groupDevicesWithCategory(devices), [devices]);
+
+  // Count distinct devices (models), not raw OS-variant rows, so the sidebar
+  // matches what "N device ditemukan" means in the main list.
+  const categoryCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const g of groups) {
+      counts.set(g.category_slug ?? "", (counts.get(g.category_slug ?? "") ?? 0) + 1);
+    }
+    return counts;
+  }, [groups]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -57,7 +59,7 @@ export function AllDevicesBrowser({ devices }: { devices: DeviceWithCategory[] }
             label="Semua Produk"
             active={category === "all"}
             onClick={() => setCategory("all")}
-            count={devices.length}
+            count={groups.length}
           />
           {CATEGORY_DEFS.map((def) => (
             <CategoryPill
