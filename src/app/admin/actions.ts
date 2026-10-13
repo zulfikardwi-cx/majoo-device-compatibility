@@ -30,14 +30,19 @@ export async function uploadDevicePhoto(formData: FormData) {
     throw new Error("Not authenticated");
   }
 
-  const deviceId = String(formData.get("deviceId") ?? "");
+  // One physical device can have several rows (one per OS) — the photo applies
+  // to all of them, so deviceIds is a comma-separated list of every variant's id.
+  const deviceIds = String(formData.get("deviceIds") ?? "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
   const categorySlug = String(formData.get("categorySlug") ?? "");
   const file = formData.get("photo") as File | null;
-  if (!deviceId || !file || file.size === 0) return;
+  if (deviceIds.length === 0 || !file || file.size === 0) return;
 
   const supabase = getSupabaseAdmin();
   const ext = file.name.split(".").pop() || "jpg";
-  const path = `${deviceId}-${Date.now()}.${ext}`;
+  const path = `${deviceIds[0]}-${Date.now()}.${ext}`;
 
   const { error: uploadError } = await supabase.storage
     .from("device-photos")
@@ -52,7 +57,7 @@ export async function uploadDevicePhoto(formData: FormData) {
   const { error: updateError } = await supabase
     .from("devices")
     .update({ photo_url: publicUrl.publicUrl, updated_at: new Date().toISOString() })
-    .eq("id", deviceId);
+    .in("id", deviceIds);
   if (updateError) throw new Error(updateError.message);
 
   revalidatePath(`/admin/dashboard/${categorySlug}`);

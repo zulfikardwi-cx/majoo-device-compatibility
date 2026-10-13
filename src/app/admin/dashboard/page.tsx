@@ -1,9 +1,8 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 import { isAdminAuthenticated } from "@/lib/auth";
-import { logout } from "@/app/admin/actions";
 import { getCategoriesWithCounts } from "@/lib/data";
+import { AdminHeader } from "@/components/AdminHeader";
 
 export default async function AdminDashboardPage() {
   if (!(await isAdminAuthenticated())) {
@@ -12,36 +11,39 @@ export default async function AdminDashboardPage() {
   const categories = await getCategoriesWithCounts();
 
   return (
-    <main className="mx-auto max-w-3xl flex-1 px-4 py-10 sm:px-6">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-[var(--foreground)]">Admin — Kategori</h1>
-        <form action={logout}>
-          <button
-            type="submit"
-            className="rounded-full border border-[var(--color-border)] px-4 py-2 text-sm font-medium text-[var(--foreground)] hover:border-[var(--color-primary)]"
-          >
-            Keluar
-          </button>
-        </form>
-      </div>
+    <>
+      <AdminHeader />
+      <main className="mx-auto max-w-6xl flex-1 px-4 py-8 sm:px-6">
+        <h1 className="mb-1 text-xl font-bold text-[var(--foreground)]">Kelola Kategori</h1>
+        <p className="mb-6 text-sm text-[var(--color-text-muted)]">
+          Pilih kategori untuk upload foto device atau ubah status compatibility.
+        </p>
 
-      <div className="divide-y divide-[var(--color-border)] rounded-2xl border border-[var(--color-border)] bg-white">
-        {categories.map((cat) => (
-          <Link
-            key={cat.slug}
-            href={`/admin/dashboard/${cat.slug}`}
-            className="flex items-center justify-between px-5 py-4 hover:bg-[var(--color-muted)]"
-          >
-            <span>
-              <span className="block font-medium text-[var(--foreground)]">{cat.name}</span>
-              <span className="block text-sm text-[var(--color-text-muted)]">
-                {cat.deviceCount} device
-              </span>
-            </span>
-            <ChevronRight className="h-4 w-4 text-[var(--color-text-muted)]" aria-hidden="true" />
-          </Link>
-        ))}
-      </div>
-    </main>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {categories.map((cat) => {
+            const Icon = cat.icon;
+            return (
+              <Link
+                key={cat.slug}
+                href={`/admin/dashboard/${cat.slug}`}
+                className="group flex items-center gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 transition-all hover:-translate-y-0.5 hover:border-[var(--color-primary)] hover:shadow-md"
+              >
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--color-muted)] text-[var(--color-primary-dark)] transition-colors group-hover:bg-[var(--color-primary)] group-hover:text-white">
+                  <Icon className="h-6 w-6" aria-hidden="true" />
+                </span>
+                <span className="flex-1">
+                  <span className="block font-semibold text-[var(--foreground)]">
+                    {cat.name}
+                  </span>
+                  <span className="block text-sm text-[var(--color-text-muted)]">
+                    {cat.deviceCount} device
+                  </span>
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </main>
+    </>
   );
 }
