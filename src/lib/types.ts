@@ -7,6 +7,11 @@ export type Category = {
   sort_order: number;
 };
 
+export type DeviceWithCategory = Device & {
+  category_slug: string;
+  category_name: string;
+};
+
 export type Device = {
   id: string;
   category_id: string;

@@ -61,7 +61,7 @@ export async function uploadDevicePhoto(formData: FormData) {
   if (updateError) throw new Error(updateError.message);
 
   revalidatePath(`/admin/dashboard/${categorySlug}`);
-  revalidatePath(`/kategori/${categorySlug}`);
+  revalidatePath("/");
 }
 
 export async function updateDeviceStatus(formData: FormData) {
@@ -87,5 +87,5 @@ export async function updateDeviceStatus(formData: FormData) {
   if (error) throw new Error(error.message);
 
   revalidatePath(`/admin/dashboard/${categorySlug}`);
-  revalidatePath(`/kategori/${categorySlug}`);
+  revalidatePath("/");
 }

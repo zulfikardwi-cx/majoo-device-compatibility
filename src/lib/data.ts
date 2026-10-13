@@ -1,6 +1,31 @@
 import { getSupabase } from "@/lib/supabase/server";
 import { CATEGORY_DEFS } from "@/lib/categories";
-import type { Category, Device } from "@/lib/types";
+import type { Category, Device, DeviceWithCategory } from "@/lib/types";
+
+/**
+ * All devices for the public site, across every category, excluding anything
+ * tagged "Tidak Compatible" — those are only visible to admins.
+ */
+export async function getPublicDevicesWithCategory(): Promise<DeviceWithCategory[]> {
+  const supabase = getSupabase();
+  const { data } = await supabase
+    .from("devices")
+    .select("*, categories(slug, name)")
+    .neq("compatibility_status", "not_compatible")
+    .order("merk")
+    .order("type");
+
+  return (data ?? []).map((row) => {
+    const { categories, ...device } = row as Device & {
+      categories: { slug: string; name: string } | null;
+    };
+    return {
+      ...device,
+      category_slug: categories?.slug ?? "",
+      category_name: categories?.name ?? "",
+    };
+  });
+}
 
 export async function getCategoriesWithCounts() {
   const supabase = getSupabase();

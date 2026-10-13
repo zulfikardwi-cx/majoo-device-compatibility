@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { getCategoriesWithCounts } from "@/lib/data";
+import { AllDevicesBrowser } from "@/components/AllDevicesBrowser";
+import { getPublicDevicesWithCategory } from "@/lib/data";
 
 export default async function Home() {
-  const categories = await getCategoriesWithCounts();
+  const devices = await getPublicDevicesWithCategory();
 
   return (
     <>
@@ -22,34 +22,8 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-          <h2 className="mb-6 text-lg font-semibold text-[var(--foreground)]">
-            Pilih kategori device
-          </h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {categories.map((cat) => {
-              const Icon = cat.icon;
-              return (
-                <Link
-                  key={cat.slug}
-                  href={`/kategori/${cat.slug}`}
-                  className="group flex items-center gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 transition-all hover:-translate-y-0.5 hover:border-[var(--color-primary)] hover:shadow-md"
-                >
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--color-muted)] text-[var(--color-primary-dark)] transition-colors group-hover:bg-[var(--color-primary)] group-hover:text-white">
-                    <Icon className="h-6 w-6" aria-hidden="true" />
-                  </span>
-                  <span className="flex-1">
-                    <span className="block font-semibold text-[var(--foreground)]">
-                      {cat.name}
-                    </span>
-                    <span className="block text-sm text-[var(--color-text-muted)]">
-                      {cat.deviceCount} device
-                    </span>
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
+        <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+          <AllDevicesBrowser devices={devices} />
         </section>
       </main>
       <SiteFooter />

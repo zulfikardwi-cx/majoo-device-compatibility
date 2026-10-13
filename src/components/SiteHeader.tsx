@@ -17,14 +17,6 @@ export function SiteHeader() {
             Device Compatibility
           </span>
         </Link>
-        <nav className="flex items-center gap-4 text-sm font-medium">
-          <Link
-            href="/"
-            className="text-[var(--foreground)] hover:text-[var(--color-primary-dark)] transition-colors"
-          >
-            Kategori
-          </Link>
-        </nav>
       </div>
     </header>
   );
