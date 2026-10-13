@@ -1,26 +1,44 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f6faf9;
+  --foreground: #0f2a27;
+
+  --color-primary: #2dbdb6;
+  --color-primary-dark: #1f8f8a;
+  --color-accent: #9acf87;
+  --color-surface: #ffffff;
+  --color-muted: #eef6f4;
+  --color-border: #dcece9;
+  --color-text-muted: #5b716d;
+  --color-success: #1f9254;
+  --color-success-bg: #e7f6ee;
+  --color-danger: #c0392b;
+  --color-danger-bg: #fdecea;
+  --color-neutral: #6b7280;
+  --color-neutral-bg: #f1f2f4;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
+    sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+.gradient-brand {
+  background-image: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+}
+
+.gradient-brand-text {
+  background-image: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }

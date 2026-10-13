@@ -1,0 +1,37 @@
+import Image from "next/image";
+import Link from "next/link";
+
+export function SiteHeader() {
+  return (
+    <header className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-white/80 backdrop-blur-md">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+        <Link href="/" className="flex items-center gap-2" aria-label="Majoo — Home">
+          <Image
+            src="/majoo-wordmark.svg"
+            alt="majoo"
+            width={110}
+            height={33}
+            priority
+          />
+          <span className="hidden text-sm font-medium text-[var(--color-text-muted)] sm:inline">
+            Device Compatibility
+          </span>
+        </Link>
+        <nav className="flex items-center gap-4 text-sm font-medium">
+          <Link
+            href="/"
+            className="text-[var(--foreground)] hover:text-[var(--color-primary-dark)] transition-colors"
+          >
+            Kategori
+          </Link>
+          <Link
+            href="/admin"
+            className="rounded-full border border-[var(--color-border)] px-4 py-2 text-[var(--foreground)] transition-colors hover:border-[var(--color-primary)] hover:text-[var(--color-primary-dark)]"
+          >
+            Admin
+          </Link>
+        </nav>
+      </div>
+    </header>
+  );
+}
