@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { Search, ImageOff, ChevronDown } from "lucide-react";
+import { Search, ImageOff, ChevronDown, X } from "lucide-react";
 import type { Device } from "@/lib/types";
 import { groupDevices, type DeviceGroup } from "@/lib/group-devices";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -12,6 +12,7 @@ export function DeviceGrid({ devices }: { devices: Device[] }) {
   const [osFilter, setOsFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
+  const [activeGroup, setActiveGroup] = useState<DeviceGroup | null>(null);
 
   const osOptions = useMemo(() => {
     const set = new Set(devices.map((d) => d.os).filter((v): v is string => !!v));
@@ -100,9 +101,14 @@ export function DeviceGrid({ devices }: { devices: Device[] }) {
               onToggle={() =>
                 setExpandedKey(expandedKey === group.key ? null : group.key)
               }
+              onOpenPhoto={() => setActiveGroup(group)}
             />
           ))}
         </div>
+      )}
+
+      {activeGroup && (
+        <DeviceModal group={activeGroup} onClose={() => setActiveGroup(null)} />
       )}
     </div>
   );
@@ -112,10 +118,12 @@ function DeviceGroupCard({
   group,
   expanded,
   onToggle,
+  onOpenPhoto,
 }: {
   group: DeviceGroup;
   expanded: boolean;
   onToggle: () => void;
+  onOpenPhoto: () => void;
 }) {
   const hasDetails = group.variants.some(
     (v) => v.setting || v.notes || v.app_version
@@ -124,7 +132,12 @@ function DeviceGroupCard({
   return (
     <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
       <div className="flex gap-4">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[var(--color-muted)]">
+        <button
+          type="button"
+          onClick={onOpenPhoto}
+          aria-label={`Lihat foto ${group.merk} ${group.type}`}
+          className="flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl bg-[var(--color-muted)] transition-opacity hover:opacity-80"
+        >
           {group.photo_url ? (
             <Image
               src={group.photo_url}
@@ -136,7 +149,7 @@ function DeviceGroupCard({
           ) : (
             <ImageOff className="h-6 w-6 text-[var(--color-text-muted)]" aria-hidden="true" />
           )}
-        </div>
+        </button>
         <div className="flex-1">
           <p className="font-semibold text-[var(--foreground)]">
             {group.merk}
@@ -195,6 +208,104 @@ function DeviceGroupCard({
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+function DeviceModal({ group, onClose }: { group: DeviceGroup; onClose: () => void }) {
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = "";
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Detail ${group.merk} ${group.type}`}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 shadow-xl"
+      >
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <p className="text-lg font-semibold text-[var(--foreground)]">
+              {group.merk}
+              <span className="font-normal text-[var(--color-text-muted)]"> — {group.type || "—"}</span>
+            </p>
+            {group.kategori_sub && (
+              <p className="text-sm text-[var(--color-text-muted)]">{group.kategori_sub}</p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Tutup"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--color-text-muted)] hover:bg-[var(--color-muted)]"
+          >
+            <X className="h-5 w-5" aria-hidden="true" />
+          </button>
+        </div>
+
+        <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-xl bg-[var(--color-muted)]">
+          {group.photo_url ? (
+            <Image
+              src={group.photo_url}
+              alt={`${group.merk} ${group.type}`}
+              width={480}
+              height={480}
+              className="h-full w-full object-contain"
+            />
+          ) : (
+            <div className="flex flex-col items-center gap-2 text-[var(--color-text-muted)]">
+              <ImageOff className="h-10 w-10" aria-hidden="true" />
+              <p className="text-sm">Belum ada foto</p>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-4 space-y-1.5">
+          {group.variants.map((v) => (
+            <div
+              key={v.id}
+              className="flex items-center justify-between gap-3 rounded-lg bg-[var(--color-muted)] px-3 py-1.5"
+            >
+              <span className="text-sm font-medium text-[var(--foreground)]">
+                {v.os ?? "OS tidak diketahui"}
+              </span>
+              <StatusBadge status={v.compatibility_status} />
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 space-y-3 border-t border-[var(--color-border)] pt-3 text-xs">
+          {group.variants.map((v) => {
+            if (!v.setting && !v.notes && !v.app_version) return null;
+            return (
+              <div key={v.id} className="space-y-1.5">
+                {group.variants.length > 1 && (
+                  <p className="font-semibold text-[var(--foreground)]">{v.os}</p>
+                )}
+                {v.setting && <Row label="Setting" value={v.setting} />}
+                {v.app_version && (
+                  <Row label="Versi aplikasi" value={v.app_version} suffix="atau versi lebih baru" />
+                )}
+                {v.notes && <Row label="Catatan" value={v.notes} />}
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
