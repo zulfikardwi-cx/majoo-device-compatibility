@@ -6,26 +6,65 @@ import { Search, ImageOff, ChevronDown } from "lucide-react";
 import type { Device } from "@/lib/types";
 import { StatusBadge } from "@/components/StatusBadge";
 
+type DeviceGroup = {
+  key: string;
+  merk: string;
+  type: string;
+  kategori_sub: string | null;
+  photo_url: string | null;
+  variants: Device[];
+};
+
+function groupDevices(devices: Device[]): DeviceGroup[] {
+  const groups = new Map<string, DeviceGroup>();
+  for (const d of devices) {
+    const key = `${d.merk.trim().toLowerCase()}|${d.type.trim().toLowerCase()}|${
+      d.kategori_sub?.trim().toLowerCase() ?? ""
+    }`;
+    const existing = groups.get(key);
+    if (existing) {
+      existing.variants.push(d);
+      if (!existing.photo_url && d.photo_url) existing.photo_url = d.photo_url;
+    } else {
+      groups.set(key, {
+        key,
+        merk: d.merk,
+        type: d.type,
+        kategori_sub: d.kategori_sub,
+        photo_url: d.photo_url,
+        variants: [d],
+      });
+    }
+  }
+  return Array.from(groups.values());
+}
+
 export function DeviceGrid({ devices }: { devices: Device[] }) {
   const [query, setQuery] = useState("");
   const [osFilter, setOsFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
 
   const osOptions = useMemo(() => {
     const set = new Set(devices.map((d) => d.os).filter((v): v is string => !!v));
     return Array.from(set).sort();
   }, [devices]);
 
+  const groups = useMemo(() => groupDevices(devices), [devices]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return devices.filter((d) => {
-      if (q && !`${d.merk} ${d.type}`.toLowerCase().includes(q)) return false;
-      if (osFilter !== "all" && d.os !== osFilter) return false;
-      if (statusFilter !== "all" && d.compatibility_status !== statusFilter) return false;
+    return groups.filter((g) => {
+      if (q && !`${g.merk} ${g.type}`.toLowerCase().includes(q)) return false;
+      if (osFilter !== "all" && !g.variants.some((v) => v.os === osFilter)) return false;
+      if (
+        statusFilter !== "all" &&
+        !g.variants.some((v) => v.compatibility_status === statusFilter)
+      )
+        return false;
       return true;
     });
-  }, [devices, query, osFilter, statusFilter]);
+  }, [groups, query, osFilter, statusFilter]);
 
   return (
     <div>
@@ -85,68 +124,104 @@ export function DeviceGrid({ devices }: { devices: Device[] }) {
         </p>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((device) => {
-            const expanded = expandedId === device.id;
+          {filtered.map((group) => (
+            <DeviceGroupCard
+              key={group.key}
+              group={group}
+              expanded={expandedKey === group.key}
+              onToggle={() =>
+                setExpandedKey(expandedKey === group.key ? null : group.key)
+              }
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DeviceGroupCard({
+  group,
+  expanded,
+  onToggle,
+}: {
+  group: DeviceGroup;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const hasDetails = group.variants.some(
+    (v) => v.setting || v.notes || v.app_version
+  );
+
+  return (
+    <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+      <div className="flex gap-4">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[var(--color-muted)]">
+          {group.photo_url ? (
+            <Image
+              src={group.photo_url}
+              alt={`${group.merk} ${group.type}`}
+              width={64}
+              height={64}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <ImageOff className="h-6 w-6 text-[var(--color-text-muted)]" aria-hidden="true" />
+          )}
+        </div>
+        <div className="flex-1">
+          <p className="font-semibold text-[var(--foreground)]">
+            {group.merk}
+            <span className="font-normal text-[var(--color-text-muted)]"> — {group.type || "—"}</span>
+          </p>
+          {group.kategori_sub && (
+            <p className="text-xs text-[var(--color-text-muted)]">{group.kategori_sub}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-3 space-y-1.5">
+        {group.variants.map((v) => (
+          <div
+            key={v.id}
+            className="flex items-center justify-between gap-3 rounded-lg bg-[var(--color-muted)] px-3 py-1.5"
+          >
+            <span className="text-sm font-medium text-[var(--foreground)]">
+              {v.os ?? "OS tidak diketahui"}
+            </span>
+            <StatusBadge status={v.compatibility_status} />
+          </div>
+        ))}
+      </div>
+
+      {hasDetails && (
+        <button
+          type="button"
+          onClick={onToggle}
+          className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-medium text-[var(--color-primary-dark)] hover:bg-[var(--color-muted)]"
+        >
+          {expanded ? "Sembunyikan detail" : "Lihat detail"}
+          <ChevronDown
+            className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`}
+            aria-hidden="true"
+          />
+        </button>
+      )}
+
+      {expanded && (
+        <div className="mt-3 space-y-3 border-t border-[var(--color-border)] pt-3 text-xs">
+          {group.variants.map((v) => {
+            if (!v.setting && !v.notes && !v.app_version) return null;
             return (
-              <div
-                key={device.id}
-                className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4"
-              >
-                <div className="flex gap-4">
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[var(--color-muted)]">
-                    {device.photo_url ? (
-                      <Image
-                        src={device.photo_url}
-                        alt={`${device.merk} ${device.type}`}
-                        width={64}
-                        height={64}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <ImageOff className="h-6 w-6 text-[var(--color-text-muted)]" aria-hidden="true" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-[var(--foreground)]">{device.merk}</p>
-                    <p className="text-sm text-[var(--color-text-muted)]">
-                      {device.type || "—"}
-                      {device.os ? ` · ${device.os}` : ""}
-                    </p>
-                    <div className="mt-2">
-                      <StatusBadge status={device.compatibility_status} />
-                    </div>
-                  </div>
-                </div>
-
-                {(device.setting || device.notes || device.kategori_sub || device.app_version) && (
-                  <button
-                    type="button"
-                    onClick={() => setExpandedId(expanded ? null : device.id)}
-                    className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-medium text-[var(--color-primary-dark)] hover:bg-[var(--color-muted)]"
-                  >
-                    {expanded ? "Sembunyikan detail" : "Lihat detail"}
-                    <ChevronDown
-                      className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`}
-                      aria-hidden="true"
-                    />
-                  </button>
+              <div key={v.id} className="space-y-1.5">
+                {group.variants.length > 1 && (
+                  <p className="font-semibold text-[var(--foreground)]">{v.os}</p>
                 )}
-
-                {expanded && (
-                  <dl className="mt-3 space-y-1.5 border-t border-[var(--color-border)] pt-3 text-xs">
-                    {device.kategori_sub && (
-                      <Row label="Kategori" value={device.kategori_sub} />
-                    )}
-                    {device.setting && <Row label="Setting" value={device.setting} />}
-                    {device.app_version && (
-                      <Row
-                        label="Versi aplikasi"
-                        value={`${device.app_version} atau versi lebih baru`}
-                      />
-                    )}
-                    {device.notes && <Row label="Catatan" value={device.notes} />}
-                  </dl>
+                {v.setting && <Row label="Setting" value={v.setting} />}
+                {v.app_version && (
+                  <Row label="Versi aplikasi" value={v.app_version} suffix="atau versi lebih baru" />
                 )}
+                {v.notes && <Row label="Catatan" value={v.notes} />}
               </div>
             );
           })}
@@ -156,11 +231,12 @@ export function DeviceGrid({ devices }: { devices: Device[] }) {
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value, suffix }: { label: string; value: string; suffix?: string }) {
   return (
-    <div className="flex gap-2">
-      <dt className="w-28 shrink-0 text-[var(--color-text-muted)]">{label}</dt>
-      <dd className="text-[var(--foreground)]">{value}</dd>
+    <div>
+      <dt className="text-[var(--color-text-muted)]">{label}</dt>
+      <dd className="mt-0.5 text-[var(--foreground)]">{value}</dd>
+      {suffix && <dd className="text-[var(--color-text-muted)]">{suffix}</dd>}
     </div>
   );
 }
