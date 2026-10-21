@@ -13,9 +13,6 @@ export function SiteHeader() {
             height={33}
             priority
           />
-          <span className="hidden text-sm font-medium text-[var(--color-text-muted)] sm:inline">
-            Device Compatibility
-          </span>
         </Link>
       </div>
     </header>
