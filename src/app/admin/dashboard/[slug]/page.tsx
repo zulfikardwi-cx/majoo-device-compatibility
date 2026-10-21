@@ -33,15 +33,16 @@ export default async function AdminCategoryPage({
         </Link>
         <h1 className="text-xl font-bold text-[var(--foreground)]">{def.name}</h1>
         <p className="mb-6 mt-1 text-sm text-[var(--color-text-muted)]">
-          {devices.length} baris device. Klik foto untuk upload, atau ubah status/catatan per OS lalu klik simpan.
+          {devices.length} baris device. Klik foto untuk upload, ubah status/catatan per OS,
+          atau tambah/hapus device.
         </p>
 
-        {devices.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-[var(--color-border)] py-12 text-center text-sm text-[var(--color-text-muted)]">
-            Belum ada device di kategori ini. Jalankan script import sheet dulu.
-          </p>
+        {category ? (
+          <AdminDeviceGrid devices={devices} categoryId={category.id} categorySlug={slug} />
         ) : (
-          <AdminDeviceGrid devices={devices} categorySlug={slug} />
+          <p className="rounded-xl border border-dashed border-[var(--color-border)] py-12 text-center text-sm text-[var(--color-text-muted)]">
+            Kategori ini belum ada di database. Jalankan script import sheet dulu.
+          </p>
         )}
       </main>
     </>
