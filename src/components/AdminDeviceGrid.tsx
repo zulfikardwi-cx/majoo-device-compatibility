@@ -13,6 +13,8 @@ import {
   deleteDeviceGroup,
 } from "@/app/admin/actions";
 
+const ALL_OS = ["Android", "Windows", "iOS"];
+
 export function AdminDeviceGrid({
   devices,
   categoryId,
@@ -57,10 +59,36 @@ export function AdminDeviceGrid({
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {groups.map((group) => (
-            <AdminDeviceCard key={group.key} group={group} categorySlug={categorySlug} />
+            <AdminDeviceCard
+              key={group.key}
+              group={group}
+              categoryId={categoryId}
+              categorySlug={categorySlug}
+            />
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function OsCheckboxes({ exclude = [] }: { exclude?: string[] }) {
+  const options = ALL_OS.filter((os) => !exclude.includes(os));
+  if (options.length === 0) {
+    return (
+      <p className="text-xs text-[var(--color-text-muted)]">
+        Semua OS (Android/Windows/iOS) sudah ada untuk device ini.
+      </p>
+    );
+  }
+  return (
+    <div className="flex flex-wrap gap-3">
+      {options.map((os) => (
+        <label key={os} className="flex items-center gap-1.5 text-sm text-[var(--foreground)]">
+          <input type="checkbox" name="os" value={os} className="h-4 w-4 accent-[var(--color-primary)]" />
+          {os}
+        </label>
+      ))}
     </div>
   );
 }
@@ -98,13 +126,8 @@ function AddDeviceForm({
       <Field label="Kategori (sub)">
         <input name="kategoriSub" placeholder="mis. Mobile / Dekstop" className={inputClass} />
       </Field>
-      <Field label="OS">
-        <select name="os" className={inputClass} defaultValue="">
-          <option value="">—</option>
-          <option value="Android">Android</option>
-          <option value="Windows">Windows</option>
-          <option value="iOS">iOS</option>
-        </select>
+      <Field label="OS yang compatible (boleh lebih dari satu)" full>
+        <OsCheckboxes />
       </Field>
       <Field label="Status">
         <select name="status" className={inputClass} defaultValue="untested">
@@ -155,14 +178,79 @@ function Field({
   );
 }
 
+function AddVariantForm({
+  group,
+  categoryId,
+  categorySlug,
+  onDone,
+}: {
+  group: DeviceGroup;
+  categoryId: string;
+  categorySlug: string;
+  onDone: () => void;
+}) {
+  const formRef = useRef<HTMLFormElement>(null);
+  const existingOs = group.variants.map((v) => v.os).filter((v): v is string => !!v);
+
+  return (
+    <form
+      ref={formRef}
+      action={async (formData: FormData) => {
+        await createDevice(formData);
+        formRef.current?.reset();
+        onDone();
+      }}
+      className="mt-3 space-y-2 rounded-lg border border-dashed border-[var(--color-border)] p-3"
+    >
+      <input type="hidden" name="categoryId" value={categoryId} />
+      <input type="hidden" name="categorySlug" value={categorySlug} />
+      <input type="hidden" name="merk" value={group.merk} />
+      <input type="hidden" name="type" value={group.type} />
+      <input type="hidden" name="kategoriSub" value={group.kategori_sub ?? ""} />
+
+      <p className="text-xs font-medium text-[var(--color-text-muted)]">Tambah OS baru</p>
+      <OsCheckboxes exclude={existingOs} />
+
+      {existingOs.length < ALL_OS.length && (
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            name="status"
+            defaultValue="untested"
+            className="rounded-md border border-[var(--color-border)] bg-white px-2 py-1 text-xs outline-none focus:border-[var(--color-primary)]"
+          >
+            <option value="compatible">Compatible</option>
+            <option value="not_compatible">Tidak Compatible</option>
+            <option value="untested">Belum Diuji</option>
+          </select>
+          <input
+            type="text"
+            name="notes"
+            placeholder="Catatan (opsional)"
+            className="min-w-0 flex-1 rounded-md border border-[var(--color-border)] bg-white px-2 py-1 text-xs outline-none focus:border-[var(--color-primary)]"
+          />
+          <button
+            type="submit"
+            className="rounded-full bg-[var(--color-primary)] px-4 py-1.5 text-xs font-semibold text-white hover:opacity-90"
+          >
+            Simpan
+          </button>
+        </div>
+      )}
+    </form>
+  );
+}
+
 function AdminDeviceCard({
   group,
+  categoryId,
   categorySlug,
 }: {
   group: DeviceGroup;
+  categoryId: string;
   categorySlug: string;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [showAddVariant, setShowAddVariant] = useState(false);
   const photoFormRef = useRef<HTMLFormElement>(null);
   const deviceIds = group.variants.map((v) => v.id).join(",");
 
@@ -233,8 +321,26 @@ function AdminDeviceCard({
 
       <button
         type="button"
+        onClick={() => setShowAddVariant((v) => !v)}
+        className="mt-2 flex w-full items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-medium text-[var(--color-primary-dark)] hover:bg-[var(--color-muted)]"
+      >
+        <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+        {showAddVariant ? "Batal tambah OS" : "Tambah OS (update kompatibilitas)"}
+      </button>
+
+      {showAddVariant && (
+        <AddVariantForm
+          group={group}
+          categoryId={categoryId}
+          categorySlug={categorySlug}
+          onDone={() => setShowAddVariant(false)}
+        />
+      )}
+
+      <button
+        type="button"
         onClick={() => setExpanded((e) => !e)}
-        className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-medium text-[var(--color-primary-dark)] hover:bg-[var(--color-muted)]"
+        className="mt-2 flex w-full items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-medium text-[var(--color-primary-dark)] hover:bg-[var(--color-muted)]"
       >
         {expanded ? "Sembunyikan info lain" : "Info lain (setting, versi, catatan)"}
         <ChevronDown
